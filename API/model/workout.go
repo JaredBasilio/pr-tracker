@@ -8,9 +8,10 @@ import (
 
 type Workout struct {
 	gorm.Model
-	Name    string `gorm:"type:text" json:"name"`
-	UserID  uint
-	Records []Record
+	Name        string `gorm:"type:text" json:"name"`
+	Description string `gorm:"type:text" json:"description"`
+	UserID      uint
+	Records     []Record
 }
 
 func (workout *Workout) Save() (*Workout, error) {

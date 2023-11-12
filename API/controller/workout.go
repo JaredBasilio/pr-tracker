@@ -23,34 +23,26 @@ func CreateWorkout(context *gin.Context) {
 		return
 	}
 
-	for _, w := range user.Workouts {
-		if w.Name == newWorkout.Name {
-			context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Workout already exists"})
-			return
-		}
+	if workoutExists := ExistsWorkout(user.Workouts, newWorkout); workoutExists {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Workout already exists"})
+		return
 	}
 
 	newWorkout.UserID = user.ID
 
-	savedWorkout, err := newWorkout.Save()
-
-	if err != nil {
+	if savedWorkout, err := newWorkout.Save(); err != nil {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Error Saving Workout", "error": err.Error()})
-		return
+	} else {
+		context.IndentedJSON(http.StatusCreated, savedWorkout)
 	}
-
-	context.IndentedJSON(http.StatusCreated, savedWorkout)
 }
 
 func GetAllWorkouts(context *gin.Context) {
-	user, err := helper.CurrentUser(context)
-
-	if err != nil {
+	if user, err := helper.CurrentUser(context); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	} else {
+		context.JSON(http.StatusOK, gin.H{"data": user.Workouts})
 	}
-
-	context.JSON(http.StatusOK, gin.H{"data": user.Workouts})
 }
 
 func DeleteWorkout(context *gin.Context) {
@@ -89,12 +81,19 @@ func DeleteWorkout(context *gin.Context) {
 		return
 	}
 
-	err = workout.Delete()
-
-	if err != nil {
+	if err := workout.Delete(); err != nil {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "error deleting workout", "error": err.Error()})
 		return
 	}
 
 	context.IndentedJSON(http.StatusOK, gin.H{"message": "deleted workout"})
+}
+
+func ExistsWorkout(workouts []model.Workout, newWorkout model.Workout) bool {
+	for _, w := range workouts {
+		if w.Name == newWorkout.Name {
+			return true
+		}
+	}
+	return false
 }
