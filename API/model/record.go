@@ -23,3 +23,17 @@ func (record *Record) Save() (*Record, error) {
 	}
 	return record, nil
 }
+
+func (record *Record) Delete() error {
+	err := database.Database.Delete(record).Error
+	return err
+}
+
+func FindRecordById(id uint) (Record, error) {
+	var record Record
+	err := database.Database.Where("ID=?", id).Find(&record).Error
+	if err != nil {
+		return Record{}, err
+	}
+	return record, nil
+}

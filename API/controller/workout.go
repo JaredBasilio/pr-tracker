@@ -78,14 +78,14 @@ func DeleteWorkout(context *gin.Context) {
 
 	workout, err := model.FindWorkoutById(uint(id))
 
-	// Check if we own the workout so that we can add to it
-	if workout.UserID != user.ID {
-		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "user does not own workout"})
+	if err != nil {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "error getting current workout", "error": err.Error()})
 		return
 	}
 
-	if err != nil {
-		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "error getting current workout", "error": err.Error()})
+	// Check if we own the workout so that we can add to it
+	if workout.UserID != user.ID {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "user does not own workout"})
 		return
 	}
 
