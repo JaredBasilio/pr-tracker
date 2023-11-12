@@ -21,6 +21,11 @@ func (workout *Workout) Save() (*Workout, error) {
 	return workout, nil
 }
 
+func (workout *Workout) Delete() error {
+	err := database.Database.Delete(workout).Error
+	return err
+}
+
 func FindWorkoutById(id uint) (Workout, error) {
 	var workout Workout
 	err := database.Database.Preload("Records").Where("ID=?", id).Find(&workout).Error

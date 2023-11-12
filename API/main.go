@@ -38,6 +38,7 @@ func serveApplication() {
 	protectedRoutes.Use(middleware.JWTAuthMiddleware())
 	protectedRoutes.POST("/workout", controller.CreateWorkout)
 	protectedRoutes.GET("/workout", controller.GetAllWorkouts)
+	protectedRoutes.DELETE("/workout/:id", controller.DeleteWorkout)
 
 	protectedRoutes.POST("/workout/:id/records", controller.AddRecord)
 	protectedRoutes.GET("/workout/:id/records", controller.GetAllRecords)

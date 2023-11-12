@@ -4,6 +4,7 @@ import (
 	"PR-Tracker/api/helper"
 	"PR-Tracker/api/model"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -50,4 +51,50 @@ func GetAllWorkouts(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"data": user.Workouts})
+}
+
+func DeleteWorkout(context *gin.Context) {
+	user, err := helper.CurrentUser(context)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	idParam := context.Param("id")
+
+	// Checks if we have a workout to add to
+	if idParam == "" {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "no workout id found"})
+		return
+	}
+
+	id, err := strconv.ParseUint(idParam, 10, 64)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	workout, err := model.FindWorkoutById(uint(id))
+
+	// Check if we own the workout so that we can add to it
+	if workout.UserID != user.ID {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "user does not own workout"})
+		return
+	}
+
+	if err != nil {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "error getting current workout", "error": err.Error()})
+		return
+	}
+
+	err = workout.Delete()
+
+	if err != nil {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "error deleting workout", "error": err.Error()})
+		return
+	}
+
+	context.IndentedJSON(http.StatusOK, gin.H{"message": "deleted workout"})
 }
