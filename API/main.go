@@ -17,7 +17,7 @@ func loadDatabase() {
 	database.Connect()
 	database.Database.AutoMigrate(&model.User{})
 	database.Database.AutoMigrate(&model.Workout{})
-	database.Database.AutoMigrate(&model.PersonalRecord{})
+	database.Database.AutoMigrate(&model.Record{})
 }
 
 func loadEnv() {
@@ -38,6 +38,9 @@ func serveApplication() {
 	protectedRoutes.Use(middleware.JWTAuthMiddleware())
 	protectedRoutes.POST("/workout", controller.CreateWorkout)
 	protectedRoutes.GET("/workout", controller.GetAllWorkouts)
+
+	protectedRoutes.POST("/workout/:id/records", controller.AddRecord)
+	protectedRoutes.GET("/workout/:id/records", controller.GetAllRecords)
 
 	router.Run(":8000")
 	fmt.Println("Server running on port 8000")
