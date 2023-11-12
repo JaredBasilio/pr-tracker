@@ -1,127 +1,50 @@
 package main
 
 import (
-	"net/http"
+	"PR-Tracker/api/controller"
+	"PR-Tracker/api/database"
+	"PR-Tracker/api/middleware"
+	"PR-Tracker/api/model"
+	"fmt"
+	"log"
+
 	"github.com/gin-gonic/gin"
-	"time"
-	"github.com/google/uuid"
-	"errors"
+	"github.com/joho/godotenv"
 	// "fmt"
 )
 
-type workout struct {
-	ID string `json:"id"`
-	Name string `json:"name"`
+func loadDatabase() {
+	database.Connect()
+	database.Database.AutoMigrate(&model.User{})
+	database.Database.AutoMigrate(&model.Workout{})
+	database.Database.AutoMigrate(&model.PersonalRecord{})
 }
 
-type pr struct {
-	ID string `json:"id"`
-	WorkoutID string `json:"workoutID`
-	Date time.Time `json:"date"`
-	Record int `json:"record"`
-	Notes string `json:"notes"`
-}
-
-var workouts []workout
-
-func createWorkout(c *gin.Context) {
-	var newWorkout workout
-
-	if err := c.BindJSON(&newWorkout); err != nil {
-		return
-	}
-
-	// Check for duplicate workout name
-	for _, w := range workouts {
-		if w.Name == newWorkout.Name {
-			c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Workout already exists"})
-			return
-		}
-	}
-
-	newWorkout.ID = uuid.New().String()
-
-	workouts = append(workouts, newWorkout)
-	c.IndentedJSON(http.StatusCreated, newWorkout)
-}
-
-func getWorkouts(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, workouts)
-}
-
-func updateWorkout(c *gin.Context) {
-	id := c.Param("workoutId")
-	workoutToChange, err := getWorkoutById(id)
-
+func loadEnv() {
+	err := godotenv.Load(".env.local")
 	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Workout not found."})
-		return
+		log.Fatal("Error loading .env file")
 	}
-
-	newName, ok := c.GetQuery("newName")
-
-	if !ok {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Missing newName query parameter."})
-		return
-	}
-
-	workoutToChange.Name = newName
-	c.IndentedJSON(http.StatusOK, workoutToChange)
 }
 
-func workoutById(c *gin.Context) {
-	id := c.Param("workoutId")
-	workout, err := getWorkoutById(id)
+func serveApplication() {
+	router := gin.Default()
 
-	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Workout not found."})
-		return
-	}
+	publicRoutes := router.Group("/auth")
+	publicRoutes.POST("/register", controller.Register)
+	publicRoutes.POST("/login", controller.Login)
 
-	c.IndentedJSON(http.StatusOK, workout)
-}
+	protectedRoutes := router.Group("/api")
+	protectedRoutes.Use(middleware.JWTAuthMiddleware())
+	protectedRoutes.POST("/workout", controller.CreateWorkout)
+	protectedRoutes.GET("/workout", controller.GetAllWorkouts)
 
-func getWorkoutById(id string) (*workout, error) {
-	for i, w := range workouts {
-		if w.ID == id {
-			return &workouts[i], nil
-		}
-	}
-
-	return nil, errors.New("workout not found")
-}
-
-func deleteWorkout(c *gin.Context) {
-	id := c.Param("workoutId")
-
-	for i, w := range workouts {
-		if w.ID == id {
-			workouts = append(workouts[:i], workouts[i + 1:]...)
-			break
-		}
-	}
-
-	// TODO: delete all occurrances of a PR where id == parentID
-
-	c.Status(http.StatusNoContent)
-}
-
-func addPR(c *gin.context) {
-	id := c.Param("workoutId")
+	router.Run(":8000")
+	fmt.Println("Server running on port 8000")
 }
 
 func main() {
-	router := gin.Default()
-
-	router.POST("/workouts", createWorkout)
-	router.GET("/workouts", getWorkouts)
-	router.GET("/workouts/:workoutId", workoutById)
-	router.PUT("/workouts/:workoutId/updateWorkout", updateWorkout)
-	router.DELETE("/workouts/:workoutId/deleteWorkout", deleteWorkout)
-
-	// router.POST("/workouts/:workoutId/addPR", addPR)
-	// r.PUT("/:workoutId/:prId", updatePR)
-	// r.DELETE("/:workoutId/:prId", deletePR)
-
-	router.Run("localhost:8080")
+	loadEnv()
+	loadDatabase()
+	serveApplication()
 }
