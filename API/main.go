@@ -49,7 +49,6 @@ func getWorkouts(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, workouts)
 }
 
-// doesnt work
 func updateWorkout(c *gin.Context) {
 	id := c.Param("workoutId")
 	workoutToChange, err := getWorkoutById(id)
