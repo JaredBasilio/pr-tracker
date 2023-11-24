@@ -16,10 +16,15 @@ func CreateWorkout(context *gin.Context) {
 		return
 	}
 
+	if newWorkout.Name == "" {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "workout must have name"})
+		return
+	}
+
 	user, err := helper.CurrentUser(context)
 
 	if err != nil {
-		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Error Creating Workout under User", "error": err.Error()})
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Error Creating Getting User", "error": err.Error()})
 		return
 	}
 
@@ -38,7 +43,8 @@ func CreateWorkout(context *gin.Context) {
 }
 
 func GetAllWorkouts(context *gin.Context) {
-	if user, err := helper.CurrentUser(context); err != nil {
+	user, err := helper.CurrentUser(context)
+	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	} else {
 		context.JSON(http.StatusOK, gin.H{"data": user.Workouts})
@@ -87,6 +93,68 @@ func DeleteWorkout(context *gin.Context) {
 	}
 
 	context.IndentedJSON(http.StatusOK, gin.H{"message": "deleted workout"})
+}
+
+func UpdateWorkout(context *gin.Context) {
+	var newWorkout model.Workout
+
+	if err := context.BindJSON(&newWorkout); err != nil {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Error Creating Workout", "error": err.Error()})
+		return
+	}
+
+	if newWorkout.Name == "" {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "workout must have name"})
+		return
+	}
+
+	user, err := helper.CurrentUser(context)
+
+	if err != nil {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Error Creating Getting User", "error": err.Error()})
+		return
+	}
+
+	idParam := context.Param("id")
+
+	// Checks if we have a workout to add to
+	if idParam == "" {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "no workout id found"})
+		return
+	}
+
+	id, err := strconv.ParseUint(idParam, 10, 64)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	oldWorkout, err := model.FindWorkoutById(uint(id))
+
+	if err != nil {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "error getting current workout", "error": err.Error()})
+		return
+	}
+
+	// Check if we own the workout so that we can add to it
+	if oldWorkout.UserID != user.ID {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "user does not own workout"})
+		return
+	}
+
+	// Checks if a workout with that name already exists
+	workoutExists := ExistsWorkout(user.Workouts, newWorkout)
+	if newWorkout.Name != "" && workoutExists {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Workout already exists"})
+		return
+	}
+
+	if err := oldWorkout.Update(uint(id), newWorkout); err != nil {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Error Saving Workout", "error": err.Error()})
+	} else {
+		context.IndentedJSON(http.StatusOK, gin.H{"message": "updated workout"})
+	}
 }
 
 func ExistsWorkout(workouts []model.Workout, newWorkout model.Workout) bool {

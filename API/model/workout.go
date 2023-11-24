@@ -27,6 +27,11 @@ func (workout *Workout) Delete() error {
 	return err
 }
 
+func (workout *Workout) Update(id uint, update Workout) error {
+	err := database.Database.Model(&Workout{}).Where("ID=?", id).Updates(update).Error
+	return err
+}
+
 func FindWorkoutById(id uint) (Workout, error) {
 	var workout Workout
 	err := database.Database.Preload("Records").Where("ID=?", id).Find(&workout).Error
