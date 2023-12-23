@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from 'react';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
@@ -13,6 +15,26 @@ import Container from '@mui/material/Container';
 import { ThemeProvider } from '@mui/material/styles';
 
 export default function Login() {
+  const [username, setUsername] = React.useState('')
+  const [password, setPassword] = React.useState('')
+
+  const submit = async (e: SyntheticEvent) => {
+    e.preventDefault();
+
+    const response = await fetch('http://localhost:8000/auth/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            username: username,
+            password: password
+        })
+    });
+
+    const content = await response.json();
+
+    console.log(content)
+  }
+
   return (
     <div>
       <Container component="main" maxWidth="xs">
@@ -34,11 +56,13 @@ export default function Login() {
               margin="normal"
               required
               fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
+              id="username"
+              label="Username"
+              name="username"
+              autoComplete="username"
               autoFocus
+              value={username}
+              onChange={e => setUsername(e.target.value)}
             />
             <TextField
               margin="normal"
@@ -49,25 +73,19 @@ export default function Login() {
               type="password"
               id="password"
               autoComplete="current-password"
-            />
-            <FormControlLabel
-              control={<Checkbox value="remember" color="primary" />}
-              label="Remember me"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
             />
             <Button
               type="submit"
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
+              onClick={submit}
             >
               Sign In
             </Button>
             <Grid container>
-              <Grid item xs>
-                <Link href="#" variant="body2">
-                  Forgot password?
-                </Link>
-              </Grid>
               <Grid item>
                 <Link href="#" variant="body2">
                   {"Don't have an account? Sign Up"}

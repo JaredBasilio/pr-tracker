@@ -29,6 +29,7 @@ func loadEnv() {
 
 func serveApplication() {
 	router := gin.Default()
+	router.Use(middleware.CORSMiddleware())
 
 	publicRoutes := router.Group("/auth")
 	publicRoutes.POST("/register", controller.Register)
